@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
 
                 try {
-                    String query = String.format("http://192.168.1.242:9000/Application/Agricultius");
+                    String query = String.format("http://localhost:9000/Application/Agricultius");
                     URL url = new URL(query);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setReadTimeout(10000 );
@@ -107,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
 
                 try {
-                    String query = String.format("http://192.168.1.242:9000/Application/Login");
+                    String query = String.format("http://localhost:9000/Application/Login");
                     URL url = new URL(query);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setReadTimeout(10000 );
