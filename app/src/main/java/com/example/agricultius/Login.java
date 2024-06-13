@@ -9,9 +9,12 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -20,16 +23,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URL;
 
 public class Login extends AppCompatActivity {
 
-    private EditText usernameEditText;
-    private EditText passwordEditText;
+    private EditText usuari;
+    private EditText contrasenya;
     private Button loginButton;
 
     @Override
@@ -37,15 +37,15 @@ public class Login extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        usernameEditText = findViewById(R.id.username);
-        passwordEditText = findViewById(R.id.password);
+        usuari = findViewById(R.id.usuari);
+        contrasenya = findViewById(R.id.contrasenya);
         loginButton = findViewById(R.id.login_button);
 
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String username = usernameEditText.getText().toString();
-                String password = passwordEditText.getText().toString();
+                String username = usuari.getText().toString();
+                String password = contrasenya.getText().toString();
 
                 if (TextUtils.isEmpty(username) || TextUtils.isEmpty(password)) {
                     Toast.makeText(Login.this, "Please enter both username and password", Toast.LENGTH_SHORT).show();
@@ -56,95 +56,104 @@ public class Login extends AppCompatActivity {
         });
     }
 
-    private void authenticateUser(final String username, final String password) {
-        // Crear un nuevo Thread para la autenticación
+    private void authenticateUser(final String usuari, final String contrasenya) {
         new Thread(new Runnable() {
-            InputStream stream = null;
-            String result = null;
-            Handler handler = new Handler();
             @Override
             public void run() {
-                // Simular una operación de autenticación (por ejemplo, verificar con un servidor)
-                boolean success = false;
+                InputStream stream = null;
+                final String[] result = {null};
+                Handler handler = new Handler(Looper.getMainLooper());
+
                 try {
-                    // Simular un tiempo de espera para la autenticación
-                   // Thread.sleep(2000);
-                    // Verificación de credenciales (esto es solo un ejemplo básico)
-                   // if (username.equals("user") && password.equals("password")) {
-                     //   success = true;
-                 //   }
-                    String query = String.format("http://localhost:9000/Application/Login");
+                    String query = "http://10.0.2.2:9000/Application/Login";
                     URL url = new URL(query);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setReadTimeout(10000 );
-                    conn.setConnectTimeout(15000 /* milliseconds */);
+                    conn.setReadTimeout(10000);
+                    conn.setConnectTimeout(15000);
                     conn.setRequestMethod("POST");
                     conn.setDoInput(true);
                     conn.setDoOutput(true);
                     conn.connect();
 
-
-                    // enviar paràmetres de la funció Login en el cos del missatge
-
-                    String params = "username="+username + "&password="+ password;
-                    Log.i("serverTest ", params);
+                    String params = "usuari=" + usuari + "&contrasenya=" + contrasenya;
+                    Log.i("serverTest", params);
 
                     OutputStream os = conn.getOutputStream();
-                    BufferedWriter writer = new BufferedWriter(
-                            new OutputStreamWriter(os, "UTF-8"));
-                    writer.write(params.toString());
-
+                    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+                    writer.write(params);
                     writer.flush();
                     writer.close();
                     os.close();
 
-                    Log.i("serverTest ", "esperant resposta");
+                    Log.i("serverTest", "esperant resposta");
 
-                    //obtenir resposta del servidor
-                    stream = conn.getInputStream();
-                    BufferedReader reader = null;
-                    StringBuilder sb = new StringBuilder();
-                    reader = new BufferedReader(new InputStreamReader(stream));
-                    String line = null;
-                    while ((line = reader.readLine()) != null) {
-                        sb.append(line);
+                    int responseCode = conn.getResponseCode();
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        stream = conn.getInputStream();
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+                        StringBuilder sb = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            sb.append(line);
+                        }
+                        result[0] = sb.toString();
+                        Log.i("serverTest", result[0]);
+
+                        try {
+                            JSONObject response = new JSONObject(result[0]);
+                            boolean success = response.getString("status").equals("success");
+                            handler.post(new Runnable() {
+                                public void run() {
+                                    try {
+                                        if (success) {
+                                            Intent intent = new Intent(Login.this, Principal.class);
+                                            startActivity(intent);
+                                            finish();
+                                        } else {
+                                            String message = response.has("message") ? response.getString("message") : "Error desconocido";
+                                            Toast.makeText(Login.this, message, Toast.LENGTH_SHORT).show();
+                                        }
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                        Toast.makeText(Login.this, "Error en el formato de la respuesta del servidor", Toast.LENGTH_SHORT).show();
+                                    }
+                                }
+                            });
+                        } catch (JSONException e) {
+                            handler.post(new Runnable() {
+                                public void run() {
+                                    Toast.makeText(Login.this, "Respuesta inesperada del servidor", Toast.LENGTH_SHORT).show();
+                                    Log.e("serverTest", "Respuesta inesperada: " + result[0]);
+                                }
+                            });
+                        }
+                    } else {
+                        handler.post(new Runnable() {
+                            public void run() {
+                                Toast.makeText(Login.this, "Error en la solicitud: " + responseCode, Toast.LENGTH_SHORT).show();
+                                Log.e("serverTest", "Código de respuesta: " + responseCode);
+                            }
+                        });
                     }
-                    result = sb.toString();
                     conn.disconnect();
-                    // Mostrar resultat en el quadre de text.
-                    // Codi incorrecte
-                    // EditText n = (EditText) findViewById (R.id.edit_message);
-                    //n.setText(result);
 
-                    //Codi correcte
-                    Log.i("serverTest", result);
+                } catch (IOException e) {
+                    e.printStackTrace();
                     handler.post(new Runnable() {
                         public void run() {
-                            TextView n = (TextView) findViewById (R.id.main);
-                            n.setText(result);
+                            Toast.makeText(Login.this, "Error de red o de análisis de datos", Toast.LENGTH_SHORT).show();
                         }
                     });
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
                 }
-
-                final boolean finalSuccess = success;
-
-                // Usar un Handler para actualizar la UI en el hilo principal
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (finalSuccess) {
-                            Intent intent = new Intent(Login.this, MainActivity.class);
-                            startActivity(intent);
-                            finish();
-                        } else {
-                            Toast.makeText(Login.this, "Invalid username or password", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                });
             }
         }).start();
     }
-}
 
+    private void showAlertDialog(String title, String message) {
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+    }
+}
