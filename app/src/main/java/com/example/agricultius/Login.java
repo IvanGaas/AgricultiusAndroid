@@ -66,7 +66,7 @@ public class Login extends AppCompatActivity {
                 Handler handler = new Handler(Looper.getMainLooper());
 
                 try {
-                    String query = "http://10.0.2.2:9000/Application/Login";
+                    String query = "http://10.0.2.2:9000/Application/LoginAndroid";
                     URL url = new URL(query);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setReadTimeout(10000);
