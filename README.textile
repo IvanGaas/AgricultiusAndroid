@@ -1,1 +1,6 @@
-Funciona el Registre, cal arreglar el Login.
+En aquesta versió funciona tot correctament:
+
+- Activity Login (POST)
+- Activity Registre (POST)
+- Pas d'informació entre Activities
+- Activity Llista Usuaris (GET)
