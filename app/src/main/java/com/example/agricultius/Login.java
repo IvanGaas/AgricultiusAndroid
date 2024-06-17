@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 
 public class Login extends AppCompatActivity {
 
@@ -73,9 +74,12 @@ public class Login extends AppCompatActivity {
                     conn.setRequestMethod("POST");
                     conn.setDoInput(true);
                     conn.setDoOutput(true);
+                    conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                    conn.setRequestProperty("X-Requested-With", "XMLHttpRequest"); // Header para identificar la solicitud
                     conn.connect();
 
-                    String params = "usuari=" + usuari + "&contrasenya=" + contrasenya;
+                    String params = "usuari=" + URLEncoder.encode(usuari, "UTF-8") +
+                            "&contrasenya=" + URLEncoder.encode(contrasenya, "UTF-8");
                     Log.i("serverTest", params);
 
                     OutputStream os = conn.getOutputStream();

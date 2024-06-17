@@ -133,7 +133,6 @@ public class Register extends AppCompatActivity {
                         }
                         result[0] = sb.toString();
                         Log.i("serverTest", result[0]);
-
                         if (result[0].startsWith("{")) {
                             JSONObject response = new JSONObject(result[0]);
                             boolean success = response.getString("status").equals("success");
@@ -158,10 +157,11 @@ public class Register extends AppCompatActivity {
                             handler.post(new Runnable() {
                                 public void run() {
                                     Toast.makeText(Register.this, "Respuesta inesperada del servidor", Toast.LENGTH_SHORT).show();
-                                    Log.e("serverTest", "Respuesta inesperada: " + result);
+                                    Log.e("serverTest", "Respuesta inesperada: " + result[0]);
                                 }
                             });
                         }
+
                     } else {
                         handler.post(new Runnable() {
                             public void run() {
